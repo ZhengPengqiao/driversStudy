@@ -4,7 +4,8 @@ obj-m += mem_test.o
 
 else
 
-KDIR := /usr/src/linux-headers-4.4.0-111-generic/
+KNAME := $(shell uname -r)
+KDIR := /usr/src/linux-headers-$(KNAME)/
 
 all:
 	make -C $(KDIR) M=$(PWD) modules

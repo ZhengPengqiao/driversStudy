@@ -156,7 +156,7 @@ static const struct file_operations hello_chdev_fops={
 static int __init hello_chdev_init(void)
 {
     int ret;
-    printk("in %s ..\n", __func__);
+	printk("ISL7998X probe (KE_V=%s KO_V=%s COMPILE_TIME=%s)\n", KE_GIT_REVISION, KO_GIT_REVISION, COMPILE_TIME);
 
     /* hello_chdev_major=0时，将会动态分配一个主设备号，不等于0时，将会使用指定的设备号 */
     hello_chdev_major = register_chrdev(hello_chdev_major, MYDEV_NAME, &hello_chdev_fops);

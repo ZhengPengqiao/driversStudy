@@ -89,23 +89,46 @@ static int myvivi_probe(struct i2c_client *client,
 	if (!mydev)
 		return -ENOMEM;
 
-	/* 注册v4l2设备 */
-	retval = v4l2_device_register(dev, &mydev->v4l2_dev);
-	if (retval) goto v4l2_err;
+
 
 	mydev->client = client;
 	mydev->dev = dev;
 	mydev->subdev.v4l2_dev = &mydev->v4l2_dev;
 	sprintf(mydev->subdev.name, "%s" , "myvivid-subdev");
 
-	v4l2_i2c_subdev_init(&mydev->subdev, client, &myvivi_subdev_ops);
-	v4l2_device_register_subdev( &mydev->v4l2_dev, &mydev->subdev);
 
+	/* register v4l2 device */
+	v4l2_subdev_init(&mydev->subdev, &myvivi_subdev_ops);
+	mydev->subdev.flags |= V4L2_SUBDEV_FL_HAS_DEVNODE;
+	mydev->subdev.owner = THIS_MODULE;
+	strlcpy(mydev->v4l2_dev.name, "mx8-img-md", sizeof(mydev->v4l2_dev.name));
+	/* 注册v4l2设备 */
+	retval = v4l2_device_register(dev, &mydev->v4l2_dev);
+	if (retval)
+	{
+		v4l2_err(&mydev->v4l2_dev, "Failed to register ret=(%d)\n",  retval);
+		goto v4l2_err;
+	}
+
+	retval = v4l2_device_register_subdev(&mydev->v4l2_dev, &mydev->subdev);
+	if (retval < 0)
+	{
+		v4l2_err(&mydev->v4l2_dev, "Failed to register ret=(%d)\n", retval);
+		return retval;
+	}
+
+	retval = v4l2_device_register_subdev_nodes(&mydev->v4l2_dev);
+	if (retval < 0) {
+		v4l2_err(&mydev->v4l2_dev, "%s v4l2_device_register_subdev_nodes err\n", __func__);
+		return retval;
+	}
+	
 	return retval;
 v4l2_err:
 	devm_kfree(&client->dev, mydev);
 	return retval;
 }
+
 
 /*!
  * max9286 I2C detach function

@@ -1,5 +1,5 @@
-KERN_DIR =  /usr/src/linux-headers-4.4.0-141-generic/
-# KERN_DIR =  /usr/src/linux-headers-4.4.0-111-generic/
+KNAME := $(shell uname -r)
+KERN_DIR := /usr/src/linux-headers-$(KNAME)/
 
 MODULE_NAME = myvivid
 

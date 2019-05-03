@@ -1,4 +1,11 @@
+# ISL79987 MIPI driver for Linux3.14.52 and Android-6.0.1
+
 ifneq ($(KERNELRELEASE),)
+
+obj-m += gpio.o
+
+xd_mipi-objs := \
+	gpio.o
 
 # 编译时间
 COMPILE_TIME = $(shell date +"%Y-%m-%d %H:%M:%S")
@@ -10,19 +17,16 @@ EXTRA_CFLAGS += -DKE_GIT_REVISION="\"$(KE_GIT_REVISION)\""
 EXTRA_CFLAGS += -DKO_GIT_REVISION="\"$(KO_GIT_REVISION)\""
 
 
-obj-m += hello_chdev.o
-
-
 else
 
-KNAME := $(shell uname -r)
-KDIR := /usr/src/linux-headers-$(KNAME)/
+KDIR := /home/zpq/WorkSpace/worklibrary/tamsong/tsh_kernel
+
 
 all:
-	make -C $(KDIR) M=$(PWD) modules KO_GIT_REVISION=$(shell git show -s --pretty=format:%h)
-	gcc chdev_userapp.c -o chdev_userapp
+	$(MAKE) -C $(KDIR) M=$(PWD) modules  KO_GIT_REVISION=$(shell git show -s --pretty=format:%h)
+	$(CC) gpio_userapp.c -o gpio_userapp
 clean:
-	make -C $(KDIR) M=$(PWD) clean
-	rm -rf chdev_userapp
+	$(MAKE) -C $(KDIR) M=$(PWD) clean
+	rm -rf gpio_userapp
 
 endif

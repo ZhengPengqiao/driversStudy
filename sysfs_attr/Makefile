@@ -10,19 +10,18 @@ EXTRA_CFLAGS += -DKE_GIT_REVISION="\"$(KE_GIT_REVISION)\""
 EXTRA_CFLAGS += -DKO_GIT_REVISION="\"$(KO_GIT_REVISION)\""
 
 
-obj-m += hello_chdev.o
+obj-m += sys_attr.o
 
 
 else
 
-KNAME := $(shell uname -r)
-KDIR := /usr/src/linux-headers-$(KNAME)/
+KDIR := /usr/src/linux-headers-4.4.0-111-generic/
 
 all:
 	make -C $(KDIR) M=$(PWD) modules KO_GIT_REVISION=$(shell git show -s --pretty=format:%h)
-	gcc chdev_userapp.c -o chdev_userapp
+	gcc sys_attr_userapp.c -o sys_attr_userapp
 clean:
 	make -C $(KDIR) M=$(PWD) clean
-	rm -rf chdev_userapp
+	rm -rf sys_attr_userapp
 
 endif
