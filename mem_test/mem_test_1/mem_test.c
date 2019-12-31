@@ -109,7 +109,7 @@ static ssize_t mem_read(struct file *filp,char __user *buf,size_t count,loff_t *
  * @param fops 
  * @return ssize_t 写入的大小
  */
-static ssize_t mem_write(struct file *filp, char __user *buf,size_t count ,loff_t *fops)
+ssize_t mem_write(struct file *filp, const char __user *buf, size_t count,loff_t *f_pos)
 {
     int ret = -1;
     char *tmp;
@@ -153,7 +153,7 @@ static const struct file_operations mem_fops={
  */
 static int __init mem_init(void)
 {
-    int ret;
+    int ret = 0;
     printk("mem_init initial...\n");
 
     //开辟内核内存缓冲区
