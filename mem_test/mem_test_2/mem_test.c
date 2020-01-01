@@ -18,7 +18,9 @@
 #include <linux/cdev.h>
 #include <linux/errno.h>
 #include <linux/platform_device.h>
-#include <linux/uaccess.h>//copy_from_user
+#include <linux/uaccess.h>
+
+#include "mem_test.h"
 
 static unsigned debug;
 module_param(debug, uint, 0644);
@@ -31,21 +33,7 @@ MODULE_PARM_DESC(debug, "activates debug info");
  */
 int mem_major = 0; //主设备号  0：自动分配，  其它：直接注册
 int mem_minor = 0; //次设备号
-
-#define MEM_SIZE		(1024*1024*2)
-#define MYDEV_NAME		"mem_test"
 struct MyDev *mydev;
-
-
-struct MyDev {
-	struct platform_device *pdev;
-	struct class *mem_test_class; 
-	dev_t devnum; 
-	void *vaddr;
-	long long int paddr;
-	size_t mem_size;
-};
-
 
 /**
  * 打开文件设备时，将会调用此函数
@@ -146,6 +134,73 @@ ssize_t mem_test_write(struct file *filp, const char __user *buf, size_t count,l
 }  
 
 /**
+ * 通过ioctl进行配置
+ * 
+ * @author zpq (18-6-22)
+ * 
+ * @param file 文件设备
+ * @param cmd 用户指令
+ * @param arg 传递的参数
+ * 
+ * @return long
+ */
+long mem_test_ioctl(struct file *file, unsigned int cmd, unsigned long arg)
+{
+
+    int err = 0;
+    int ret = 0;
+    int size = 0;
+	void *tmp;
+    
+	pr_info("in %s() type=%d nr=%d\n", __func__, _IOC_TYPE(cmd), _IOC_NR(cmd) );
+    /* 检测命令的有效性 */
+    if (_IOC_TYPE(cmd) != MEMDEV_IOC_MAGIC) 
+        return -EINVAL;
+    if (_IOC_NR(cmd) > MEMDEV_IOC_MAXNR) 
+        return -EINVAL;
+
+    /* 根据命令类型，检测参数空间是否可以访问 */
+    if (_IOC_DIR(cmd) & _IOC_READ)
+	{
+        // err = !access_ok(VERIFY_WRITE, (void *)arg, _IOC_SIZE(cmd));
+    }
+	else if (_IOC_DIR(cmd) & _IOC_WRITE)
+    {
+	    // err = !access_ok(VERIFY_READ, (void *)arg, _IOC_SIZE(cmd));
+    }
+
+	if (err) 
+    {
+	    return -EFAULT;
+	}
+
+    /* 根据命令，执行相应的操作 */
+    switch(cmd) {
+      	case MEMDEV_IOCHELP: /* 打印帮助信息 */
+          	pr_info("<--- in %s(): CMD MEMDEV_IOCGETSIZE get the mem now size--->\n", __func__);
+          	pr_info("<--- in %s(): CMD MEMDEV_IOCSETSIZE resize alloc mem--->\n", __func__);
+        break;
+      	case MEMDEV_IOCGETSIZE:  /* 重新配置内存大小 */
+        	ret = __put_user(mydev->mem_size, (int *)arg);
+          	pr_info("<--- in %s(): get mem size(%ld) --->\n", __func__, mydev->mem_size);
+		break;
+      	case MEMDEV_IOCSETSIZE:  /* 重新配置内存大小 */
+        	ret = __get_user(size, (int *)arg);
+			tmp = krealloc(mydev->vaddr, size, GFP_KERNEL | GFP_DMA);
+			if (!tmp)
+				return -ENOMEM;
+			mydev->vaddr = tmp;
+			mydev->mem_size = size;
+          	pr_info("<--- in %s(): realloc mem mydev->vaddr=%p size=%d --->\n", __func__, mydev->vaddr, size);
+		break;
+      	default:  
+        return -EINVAL;
+    }
+    return ret;
+}
+
+
+/**
  * 文件操作方法集合
  * 
  * @author zpq (18-6-22)
@@ -156,7 +211,8 @@ static struct file_operations fops =
 	.open	=	mem_test_open,
     .read 	=	mem_test_read,  
     .write 	=	mem_test_write,  
-    .release =	mem_test_release
+    .release =	mem_test_release,
+	.unlocked_ioctl = mem_test_ioctl
 }; 
 
 
