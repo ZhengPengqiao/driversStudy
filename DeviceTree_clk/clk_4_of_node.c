@@ -32,6 +32,7 @@ static int mxc_isi_probe(struct platform_device *pdev)
 	int retval = 0;
 	struct device_node *node;
 	int isi_index = 0;
+	int i = 0;
 
 	dev_info(&pdev->dev, "In %s() (COMPILE_TIME=%s KO_VERSION=%s)\n", __func__, COMPILE_TIME, KO_VERSION);
 
@@ -39,54 +40,55 @@ static int mxc_isi_probe(struct platform_device *pdev)
 	pxd.pdev = pdev;
 
 	pm_runtime_get(&pdev->dev);
+	
+	for( i = 0; i < 4; i++ )
+	{
+		pxd.mxc_isi[i] = devm_kzalloc(dev, sizeof(struct mxc_isi_dev), GFP_KERNEL);
+				if (!pxd.mxc_isi[isi_index])
+		{
+			dev_info(dev, "%s() mxc_isi is null\n", __func__);
+			return -ENOMEM;
+		}
+
+		pxd.mxc_isi[i]->clk = of_clk_get(dev->of_node, i);
+		if (IS_ERR(pxd.mxc_isi[i]->clk))
+		{
+			dev_err(dev, "isi_index=%d failed to get isi clk\n", i);
+			return PTR_ERR(pxd.mxc_isi[i]->clk);
+		}
+		else
+		{
+			dev_info(dev, "of_clk_get pxd.mxc_isi[%d]->clk=%s ok\n", i, clk_get_name(pxd.mxc_isi[i]->clk));
+		}
+
+
+		retval = clk_prepare(pxd.mxc_isi[i]->clk);
+		if (retval < 0) {
+			dev_err(dev, "%s, clk_prepare %s clk error retval=%d\n", __func__, clk_get_name(pxd.mxc_isi[i]->clk), retval);
+		}
+		else
+		{
+			dev_info(dev, "%s, clk_prepare %s clk Ok\n", __func__,clk_get_name(pxd.mxc_isi[i]->clk));
+		}
+
+		retval = clk_enable(pxd.mxc_isi[i]->clk);
+		if (retval < 0) {
+			dev_err(dev, "%s, clk_enable %s clk error retval=%d\n", __func__, clk_get_name(pxd.mxc_isi[i]->clk), retval);
+		}
+		else
+		{
+			dev_info(dev, "%s, clk_enable %s clk Ok\n", __func__,clk_get_name(pxd.mxc_isi[i]->clk));
+		}
+	}
 
 	for_each_available_child_of_node(dev->of_node, node)
 	{
-
 		dev_info(dev, "%s() node->name=%s\n", __func__, node->name);
-
+			
 		if (!strcmp(node->name, "isi"))
 		{
-
-			pxd.mxc_isi[isi_index] = devm_kzalloc(dev, sizeof(struct mxc_isi_dev), GFP_KERNEL);
-
-			if (!pxd.mxc_isi[isi_index])
-			{
-				dev_info(dev, "%s() mxc_isi is null\n", __func__);
-				return -ENOMEM;
-			}
-
 			pxd.mxc_isi[isi_index]->id = of_alias_get_id(node, "isi");
 			dev_info(dev, "%s, isi_index=%d isi_%d\n", __func__, isi_index, pxd.mxc_isi[isi_index]->id);
-
-			pxd.mxc_isi[isi_index]->clk = of_clk_get(node, 0);
-			if (IS_ERR(pxd.mxc_isi[isi_index]->clk))
-			{
-				dev_err(dev, "isi_index=%d failed to get isi clk\n", isi_index);
-				return PTR_ERR(pxd.mxc_isi[isi_index]->clk);
-			}
-			else
-			{
-				dev_info(dev, "of_clk_get pxd.mxc_isi[%d]->clk=%s ok\n", isi_index, clk_get_name(pxd.mxc_isi[isi_index]->clk));
-			}
-
-			retval = clk_prepare(pxd.mxc_isi[isi_index]->clk);
-			if (retval < 0) {
-				dev_err(dev, "%s, clk_prepare %s clk error retval=%d\n", __func__, clk_get_name(pxd.mxc_isi[isi_index]->clk), retval);
-			}
-			else
-			{
-				dev_info(dev, "%s, clk_prepare %s clk Ok\n", __func__,clk_get_name(pxd.mxc_isi[isi_index]->clk));
-			}
-
-			retval = clk_enable(pxd.mxc_isi[isi_index]->clk);
-			if (retval < 0) {
-				dev_err(dev, "%s, clk_enable %s clk error retval=%d\n", __func__, clk_get_name(pxd.mxc_isi[isi_index]->clk), retval);
-			}
-			else
-			{
-				dev_info(dev, "%s, clk_enable %s clk Ok\n", __func__,clk_get_name(pxd.mxc_isi[isi_index]->clk));
-			}
 
 
 			dev_info(dev, "isi_index=%d ok, mxc_isi.%d registered successfully isi_num=%d\n", isi_index, pxd.mxc_isi[isi_index]->id, pxd.isi_num);

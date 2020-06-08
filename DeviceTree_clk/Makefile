@@ -4,6 +4,8 @@ obj-m += clk_1_of.o
 
 obj-m += clk_4_of.o
 
+obj-m += clk_4_of_node.o
+
 # 编译时间
 COMPILE_TIME = $(shell date +"%Y-%m-%d %H:%M:%S")
 EXTRA_CFLAGS += -DCOMPILE_TIME="\"$(COMPILE_TIME)\""
